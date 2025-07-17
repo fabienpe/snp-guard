@@ -9,8 +9,8 @@ RUN apt update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Install libslirp 4.7.1 packages, needed to enable user networking in QEMU
-ARG LIBSLIRP=http://se.archive.ubuntu.com/ubuntu/pool/main/libs/libslirp/libslirp0_4.7.0-1_amd64.deb
-ARG LIBSLIRP_DEV=http://se.archive.ubuntu.com/ubuntu/pool/main/libs/libslirp/libslirp-dev_4.7.0-1_amd64.deb
+ARG LIBSLIRP=http://ftp.de.debian.org/debian/pool/main/libs/libslirp/libslirp0_4.7.0-1_amd64.deb
+ARG LIBSLIRP_DEV=http://ftp.de.debian.org/debian/pool/main/libs/libslirp/libslirp-dev_4.7.0-1_amd64.deb
 RUN wget $LIBSLIRP -O libslirp0.deb \
     && wget $LIBSLIRP_DEV -O libslirp-dev.deb \
     && dpkg -i libslirp0.deb \
