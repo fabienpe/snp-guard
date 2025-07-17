@@ -1,5 +1,8 @@
 use std::{
-    fs::{self, File},
+    fs::{self},
+    io::{Read},
+    path::PathBuf,
+    str::FromStr,
 };
 
 use attestation_server::{
@@ -70,7 +73,7 @@ fn run(args: &Args) -> Result<(), UserError> {
     // Parse arguments
     //
 
-    let input_file = File::open(&args.input).whatever_context(format!(
+    let input_file = fs::File::open(&args.input).whatever_context(format!(
         "failed to open attestation report file at {}",
         &args.input
     ))?;
@@ -135,7 +138,7 @@ fn run(args: &Args) -> Result<(), UserError> {
         CachingVCEKDownloader::new().whatever_context("failed to instantiate vcek downloader")?;
     let vcek_cert = vcek_resolver
         .get_vceck_cert(
-            attestation_report.chip_id,
+            *attestation_report.chip_id,
             vm_description.host_cpu_family,
             &attestation_report.committed_tcb,
         )

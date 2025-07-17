@@ -175,7 +175,7 @@ fn run(args: &Args) -> Result<(), UserError> {
     CachingVCEKDownloader::new().whatever_context("failed to instantiate vcek downloader")?;
 let vcek_cert = vcek_resolver
     .get_vceck_cert(
-        attestation_report.chip_id,
+        *attestation_report.chip_id,
         vm_description.host_cpu_family,
         &attestation_report.committed_tcb,
     )
@@ -215,7 +215,7 @@ let vcek_cert = vcek_resolver
     )
     .context(InvalidReportSnafu {})?;
 
-    let user_report_data: ReportData = attestation_report.report_data.into();
+    let user_report_data: ReportData = (*attestation_report.report_data).into();
 
     //Phase2: Derive Shared secret and send encrypted disk encryption key to server
 

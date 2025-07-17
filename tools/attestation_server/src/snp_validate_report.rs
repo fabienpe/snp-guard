@@ -11,7 +11,7 @@ use reqwest::{blocking, Url};
 use serde::{Deserialize, Serialize};
 use sev::{
     certs::snp::{
-        builtin::{genoa, milan},
+        builtin::{genoa, milan, turin},
         ca, Certificate, Chain, Verifiable,
     },
     firmware::{
@@ -60,6 +60,7 @@ pub enum ProductName {
     #[default]
     Milan,
     Genoa,
+    Turin,
 }
 
 impl Display for ProductName {
@@ -67,6 +68,7 @@ impl Display for ProductName {
         let s = match self {
             ProductName::Milan => "Milan",
             ProductName::Genoa => "Genoa",
+            ProductName::Turin => "Turin",
         };
         write!(f, "{}", s)
     }
@@ -152,7 +154,12 @@ pub fn download_vceck_cert(
     tcb: &TcbVersion,
 ) -> Result<Vec<u8>, Whatever> {
     //See 4.1 in https://www.amd.com/content/dam/amd/en/documents/epyc-technical-docs/specifications/57230.pdf
-    let hw_id = hex::encode(chip_id);
+    // Conditionally truncate hw_id based on product_name
+    let hw_id = if product_name == ProductName::Turin {
+        &hex::encode(chip_id)[..16]
+    } else {
+        &hex::encode(chip_id)
+    };
     let mut req_url = Url::parse(&format!(
         "https://kdsintf.amd.com/vcek/v1/{product_name}/{hw_id}",
     ))
@@ -239,7 +246,7 @@ impl IDBLockReportData {
             );
         }
 
-        if report.family_id != self.f_id {
+        if *report.family_id != self.f_id {
             whatever!(
                 "family id does not match, expected {:x?} got {:?}",
                 self.f_id,
@@ -247,7 +254,7 @@ impl IDBLockReportData {
             );
         }
 
-        if report.image_id != self.i_id {
+        if *report.image_id != self.i_id {
             whatever!(
                 "image id does not match, expected {:x?} got {:x?}",
                 self.i_id,
@@ -255,7 +262,7 @@ impl IDBLockReportData {
             );
         }
 
-        if report.id_key_digest != self.id_key_digest {
+        if *report.id_key_digest != self.id_key_digest {
             whatever!(
                 "id key digest does not match, expected {:x?} got {:x?}",
                 self.id_key_digest,
@@ -263,7 +270,7 @@ impl IDBLockReportData {
             );
         }
 
-        if report.author_key_digest != self.author_key_digest {
+        if *report.author_key_digest != self.author_key_digest {
             whatever!(
                 "author key digest does not match, expected {:x?} got {:x?}",
                 self.author_key_digest,
@@ -333,23 +340,23 @@ where
     }
 
     if let Some(report_data_validator) = report_data_validator {
-        report_data_validator(report.report_data)?;
+        report_data_validator(*report.report_data)?;
     }
 
     if let Some(host_data) = host_data {
-        if report.host_data != host_data {
+        if *report.host_data != host_data {
             return HostDataMismatchSnafu{
                 expected: host_data,
-                got: report.host_data,
+                got: *report.host_data,
             }.fail();
         }
     }
 
     if let Some(ld) = ld {
-        if !report.measurement.eq(&ld) {
+        if !(*report.measurement).eq(&ld) {
             return LaunchDigestMismatchSnafu{
                 expected: ld,
-                got: report.measurement
+                got: *report.measurement
             }.fail();
         }
     }
@@ -377,6 +384,10 @@ pub fn verify_report_signature(
         ProductName::Genoa => {
             ark = genoa::ark().whatever_context("failed to parse ARK certificate")?;
             ask = genoa::ask().whatever_context("failed to parse ASK certificate")?;
+        }
+        ProductName::Turin => {
+            ark = turin::ark().whatever_context("failed to parse ARK certificate")?;
+            ask = turin::ask().whatever_context("failed to parse ASK certificate")?;
         }
     }
 

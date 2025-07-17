@@ -3,7 +3,7 @@ use std::io::Write;
 use ring::agreement::{self, UnparsedPublicKey};
 use sev::{
     error::UserApiError,
-    firmware::guest::{AttestationReport, Firmware},
+    firmware::guest::{Firmware},
 };
 
 pub struct ReportData {
@@ -58,21 +58,9 @@ pub trait QuerySNPAttestation {
     fn get_report(
         nonce: u64,
         server_public_key: [u8; 32],
-    ) -> Result<AttestationReport, UserApiError>;
+    ) -> Result<Vec<u8>, UserApiError>;
 }
 
-pub struct MockSNPAttestation {}
-
-impl QuerySNPAttestation for MockSNPAttestation {
-    fn get_report(
-        nonce: u64,
-        server_public_key: [u8; 32],
-    ) -> Result<AttestationReport, UserApiError> {
-        let mut report = AttestationReport::default();
-        report.report_data = ReportData::new(nonce, server_public_key).into();
-        Ok(report)
-    }
-}
 
 pub struct SNPAttestation {}
 
@@ -80,7 +68,7 @@ impl QuerySNPAttestation for SNPAttestation {
     fn get_report(
         nonce: u64,
         server_public_key: [u8; 32],
-    ) -> Result<AttestationReport, UserApiError> {
+    ) -> Result<Vec<u8>, UserApiError> {
         let mut fw = Firmware::open()?;
         let report_data = ReportData::new(nonce, server_public_key);
         fw.get_report(None, Some(report_data.into()), None)

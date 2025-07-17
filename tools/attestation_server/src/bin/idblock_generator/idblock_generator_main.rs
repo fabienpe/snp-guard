@@ -13,7 +13,7 @@ use snafu::{ResultExt, Whatever};
 use sev::measurement::{
         idblock::snp_calculate_id,
         idblock_types::{FamilyId, IdMeasurements, ImageId},
-        large_array::LargeArray, snp::SnpLaunchDigest,
+        snp::SnpLaunchDigest,
     };
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -111,9 +111,9 @@ fn compute_id_block(
 ) -> Result<IdMeasurements, Whatever> {
     //based on the unit test in https://github.com/virtee/sev/blob/main/tests/id-block.rs
 
-    let expected_ld = vm_def.compute_expected_hash()?;
+    let expected_ld = vm_def.compute_expected_hash().unwrap();
     let ld = SnpLaunchDigest::new(
-        LargeArray::try_from(expected_ld)
+        expected_ld.to_vec().as_slice().try_into()
             .whatever_context("converting to id block digest failed")?,
     );
 
