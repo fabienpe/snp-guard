@@ -1,39 +1,63 @@
-From 87de6347b49a9be9a9db38b768c1939f7fd5e2b5 Mon Sep 17 00:00:00 2001
-From: Luca Wilke <l.wilke@uni-luebeck.de>
-Date: Mon, 25 Mar 2024 13:43:33 +0100
-Subject: [PATCH] build direct boot ovmf
-
----
- common.sh | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Subject: [PATCH] - Applies to e8b814d629a0c2073239828e63d50b125c013570of AMDSEV
 
 diff --git a/common.sh b/common.sh
-index 9eee947..2bbab60 100755
+index 5f9da16..b51dee4 100755
 --- a/common.sh
 +++ b/common.sh
-@@ -155,7 +155,7 @@ build_install_ovmf()
+@@ -88,8 +88,8 @@ build_kernel()
+ 			run_cmd ./scripts/config --set-str LOCALVERSION "$VER-$COMMIT"
+ 			run_cmd ./scripts/config --disable LOCALVERSION_AUTO
+ 			run_cmd ./scripts/config --enable  EXPERT
+-			run_cmd ./scripts/config --enable  DEBUG_INFO
+-			run_cmd ./scripts/config --enable  DEBUG_INFO_REDUCED
++			run_cmd ./scripts/config --enqble  DEBUG_INFO
++			run_cmd ./scripts/config --enqble  DEBUG_INFO_REDUCED
+ 			run_cmd ./scripts/config --enable  AMD_MEM_ENCRYPT
+ 			run_cmd ./scripts/config --disable AMD_MEM_ENCRYPT_ACTIVE_BY_DEFAULT
+ 			run_cmd ./scripts/config --enable  KVM_AMD_SEV
+@@ -136,6 +136,7 @@ build_kernel()
+ 			run_cmd ./scripts/config --enable MLXSW_SPECTRUM_DCB
+ 			run_cmd ./scripts/config --module MLXSW_MINIMAL
+ 			run_cmd ./scripts/config --module MLXFW
++			run_cmd ./scripts/config --module SCSI_VIRTIO
+ 
+ 			run_cmd echo $COMMIT >../../source-commit.kernel.$V
+ 		popd >/dev/null
+@@ -169,7 +170,12 @@ build_install_ovmf()
  		GCCVERS="GCC5"
  	fi
  
 -	BUILD_CMD="nice build -q --cmd-len=64436 -DDEBUG_ON_SERIAL_PORT=TRUE -n $(getconf _NPROCESSORS_ONLN) ${GCCVERS:+-t $GCCVERS} -a X64 -p OvmfPkg/OvmfPkgX64.dsc"
 +	BUILD_CMD="nice build -q --cmd-len=64436 -DDEBUG_ON_SERIAL_PORT=TRUE -n $(getconf _NPROCESSORS_ONLN) ${GCCVERS:+-t $GCCVERS} -a X64 -p OvmfPkg/AmdSev/AmdSevX64.dsc"
++	# If you get the following error when the above command is executed:
++	# grub-mkimage: error: cannot open `/usr/lib/grub/x86_64-efi/linuxefi.mod': No such file or directory.
++	# You many need to run:
++	touch OvmfPkg/AmdSev/Grub/grub.efi
++	# See: https://github.com/AMDESE/ovmf/issues/6
  
  	# initialize git repo, or update existing remote to currently configured one
  	if [ -d ovmf ]; then
-@@ -179,11 +179,11 @@ build_install_ovmf()
- 		run_cmd git submodule update --init --recursive
- 		run_cmd make -C BaseTools
- 		. ./edksetup.sh --reconfig
-+		touch OvmfPkg/AmdSev/Grub/grub.efi
+@@ -197,9 +203,7 @@ build_install_ovmf()
  		run_cmd $BUILD_CMD
  
  		mkdir -p $DEST
 -		run_cmd cp -f Build/OvmfX64/DEBUG_$GCCVERS/FV/OVMF_CODE.fd $DEST
 -		run_cmd cp -f Build/OvmfX64/DEBUG_$GCCVERS/FV/OVMF_VARS.fd $DEST
+-		run_cmd cp -f Build/OvmfX64/DEBUG_$GCCVERS/FV/OVMF.fd $DEST
 +		run_cmd cp -f Build/AmdSev/DEBUG_$GCCVERS/FV/OVMF.fd $DEST/DIRECT_BOOT_OVMF.fd
  
  		COMMIT=$(git log --format="%h" -1 HEAD)
  		run_cmd echo $COMMIT >../source-commit.ovmf
--- 
-2.34.1
-
+diff --git a/install.sh b/install.sh
+index 3dd4d86..53f66a1 100755
+--- a/install.sh
++++ b/install.sh
+@@ -4,7 +4,7 @@
+ 
+ # This will install all the dependent packages for qemu and ovmf to run
+ if [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; then
+-	apt-get -y install qemu ovmf
++	apt-get -y install qemu-system ovmf
+ else
+ 	dnf install @virt edk2-ovmf -y
+ fi
