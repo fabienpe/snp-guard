@@ -97,6 +97,9 @@ initramfs:
 create_new_vm: init_dir
 	./guest-vm/create-new-vm.sh -image-name sevsnptest.qcow2 -build-dir $(GUEST_DIR)
 
+copy_image:
+	scp -P 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ./build/snp-release/linux/guest/*.deb $(VM_USER)@localhost:
+
 setup_verity:
 	mkdir -p $(BUILD_DIR)/verity
 	./guest-vm/setup_verity.sh -image $(IMAGE) -out-image $(VERITY_IMAGE) -out-hash-tree $(VERITY_HASH_TREE) -out-root-hash $(VERITY_ROOT_HASH)
