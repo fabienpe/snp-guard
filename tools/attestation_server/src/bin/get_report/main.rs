@@ -1,9 +1,10 @@
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 
 use clap::Parser;
-use sev::firmware::guest::Firmware;
+use sev::firmware::guest::{AttestationReport, Firmware};
 use snafu::{whatever, ResultExt, Whatever};
 use base64::{engine::general_purpose, Engine};
+use anyhow::Result;
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -35,7 +36,26 @@ fn main() -> Result<(), Whatever> {
     let report = fw.get_report(None, Some(report_data), None).whatever_context("error getting report from firmware device")?;
     
     let f = File::create(&args.out).whatever_context(format!("failed to create output file {}",&args.out))?;
-    serde_json::to_writer(f, &report).whatever_context("failed to serialize report as json")?;
     println!("Your result is at {}.\nCopy it to the host system and the \"verify_report\" binary to verify it, as described in the README", &args.out);
+
+    // Also save the report as binary
+    // See https://github.com/virtee/snpguest/blob/main/src/report.rs
+    let bin_filename = &args.out.replace(".json", ".bin");
+    let attestation = AttestationReport::from_bytes(report.as_slice());
+    match attestation {
+        Ok(value) => {
+            let mut file = OpenOptions::new()
+                .create(true)
+                .truncate(true)
+                .write(true)
+                .open(bin_filename).whatever_context("Cannot create fie")?;
+            value.write_bytes(&mut file).whatever_context("Error writing to bytes")?;
+            serde_json::to_writer(f, &value).whatever_context("failed to serialize report as json")?;
+        }
+        Err(error) => {
+            eprintln!("Error while saving binary attestation report {:?}.", error)
+        }
+    }
+    
     Ok(())
 }
