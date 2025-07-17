@@ -40,7 +40,7 @@ xargs -a $SCRIPT_DIR/dependencies.txt sudo apt install -y --no-install-recommend
 if [ -z "$AMDPATH" ]; then
 	AMDPATH=$BUILD_DIR/AMDSEV
 	if [ ! -d $AMDPATH ]; then
-    git clone https://github.com/AMDESE/AMDSEV.git --branch snp-latest --depth 1 $AMDPATH
+    	git clone https://github.com/AMDESE/AMDSEV.git --branch snp-latest --depth 1 $AMDPATH
 	fi
 	if [[ $USE_STABLE_SNAPSHOT -eq 1 ]]; then
 		echo "Switching to stable snapshots for kernel, qemu and OVMF"
