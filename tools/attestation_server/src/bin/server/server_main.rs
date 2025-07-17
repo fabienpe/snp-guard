@@ -3,13 +3,12 @@ use std::{env, fs::File, io::Write, str};
 
 use attestation_server::{
     req_resp_ds::{aead_dec, AttestationRequest, WrappedDiskKey},
-    snp_attestation::{MockSNPAttestation, QuerySNPAttestation, SNPAttestation},
+    snp_attestation::{QuerySNPAttestation, SNPAttestation},
 };
 use ring::{
     agreement::{self, EphemeralPrivateKey},
     rand,
 };
-use sev::firmware::guest::AttestationReport;
 use snafu::{whatever, FromString, ResultExt, Whatever};
 use tiny_http::{Request, Response, Server};
 
@@ -26,7 +25,6 @@ fn wait_for_request(server: &Server) -> Request {
 
 struct Config {
     no_secret_injection: bool,
-    mock_mode: bool,
     listen : String,
 }
 
@@ -42,7 +40,7 @@ enum ServerState {
 }
 
 ///Fetch attestation report and generate key material the DH key deriviation used for secret injection
-fn send_report(mut req:  Request, config: &Config) -> Result<SecretInjectionParams, Whatever> {
+fn send_report(mut req:  Request) -> Result<SecretInjectionParams, Whatever> {
     let att_req: AttestationRequest =
         serde_json::from_reader(req.as_reader()).whatever_context("failed to parse request body as json")?;
 
@@ -58,13 +56,8 @@ fn send_report(mut req:  Request, config: &Config) -> Result<SecretInjectionPara
         .try_into()
         .whatever_context("generated public dh key has unexpected length, expected 32 bytes")?;
 
-    let att_report: AttestationReport = if config.mock_mode {
-        MockSNPAttestation::get_report(att_req.nonce, server_public_key)
-            .whatever_context("failed to get mock attestation reort")?
-    } else {
-        SNPAttestation::get_report(att_req.nonce, server_public_key)
-            .whatever_context("failed to request attestation report from secure processor")?
-    };
+    let att_report = SNPAttestation::get_report(att_req.nonce, server_public_key)
+    .whatever_context("failed to request attestation report from secure processor")?;
 
     println!("Got attestation report. Sending it to client");
 
@@ -130,7 +123,7 @@ fn run(config: &Config) -> Result<(), Whatever> {
             continue;
         }
         match state {
-            ServerState::Ready => match send_report(req, config) {
+            ServerState::Ready => match send_report(req) {
                 Ok(secret_injectin_params) => {
                     if !config.no_secret_injection {
                         state = ServerState::WaitingForSecretInjection(secret_injectin_params)
@@ -158,7 +151,6 @@ fn run(config: &Config) -> Result<(), Whatever> {
 fn main() -> Result<(), Whatever>{
     let config = Config{
         no_secret_injection: env::var("NO_SECRET_INJECTION").is_ok(),
-        mock_mode: env::var("MOCK").is_ok(),
         listen: env::var("LISTEN").unwrap_or("0.0.0.0:80".to_string()),
     };
     println!("Starting attestation server on {}",&config.listen);
