@@ -1,8 +1,5 @@
 use std::{
     fs::{self},
-    io::{Read},
-    path::PathBuf,
-    str::FromStr,
 };
 
 use attestation_server::{
@@ -134,6 +131,12 @@ fn run(args: &Args) -> Result<(), UserError> {
     //
 
     println!("Verifying Report");
+    // Convert chip_id to a hexadecimal string
+    let chip_id_hex = hex::encode(attestation_report.chip_id);
+    let chip_id_hex_truncated = &chip_id_hex[..16];
+    println!("- Chip ID: {}", chip_id_hex_truncated);
+    println!("- Committed TCB: {}", attestation_report.committed_tcb);
+    println!("- Host CPU Family: {}", vm_description.host_cpu_family);
     let vcek_resolver =
         CachingVCEKDownloader::new().whatever_context("failed to instantiate vcek downloader")?;
     let vcek_cert = vcek_resolver
