@@ -43,8 +43,8 @@ The workflow consists of five different stages:
 Stages 1 to 3 are supposed to be done only once, unless you wish to install
 updated versions of the SNP tools and packages.
 
-In order to run our workflows, a machine with AMD EPYC 7xx3 (Milan) or 9xx4
-(Genoa) is required. The guide below assumes that all steps are performed
+In order to run our workflows, a machine with AMD EPYC 7xx3 (Milan), 9xx4
+(Genoa), or 9xx5 (Turin) is required. The guide below assumes that all steps are performed
 directly on the SNP host, although stages 1, 2, 4, and step 1 of stage 5 can
 (and _should_) be executed on a trusted machine (SEV-SNP is not required for
 those steps).
@@ -328,7 +328,7 @@ make run_setup
 
 # (From another shell) Copy kernel and headers to the guest VM via SCP
 # note: if the guest does not have an IP address check below instructions
-scp -P 2222 build/snp-release/linux/guest/*.deb <username>@localhost:
+make copy_image VM_USER=<username>
 ```
 
 Continue with [checking the guest configuration](#guest-configuration) from within in the guest.
