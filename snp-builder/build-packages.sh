@@ -61,4 +61,8 @@ git apply $SCRIPT_DIR/patches/*.patch
 echo "Move SNP dir to root"
 mv snp-release-*/ $BUILD_DIR/snp-release/
 
+# Remove DEBUG images, otherwise "make unpack_kernel" fails
+rm $BUILD_DIR/snp-release/linux/guest/linux-image*dbg*.deb
+rm $BUILD_DIR/snp-release/linux/host/linux-image*dbg*.deb
+
 popd
