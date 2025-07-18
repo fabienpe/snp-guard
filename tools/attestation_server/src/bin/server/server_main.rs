@@ -5,6 +5,7 @@ use attestation_server::{
     req_resp_ds::{aead_dec, AttestationRequest, WrappedDiskKey},
     snp_attestation::{QuerySNPAttestation, SNPAttestation},
 };
+use sev::firmware::guest::{AttestationReport};
 use ring::{
     agreement::{self, EphemeralPrivateKey},
     rand,
@@ -56,8 +57,10 @@ fn send_report(mut req:  Request) -> Result<SecretInjectionParams, Whatever> {
         .try_into()
         .whatever_context("generated public dh key has unexpected length, expected 32 bytes")?;
 
-    let att_report = SNPAttestation::get_report(att_req.nonce, server_public_key)
+    let raw_report = SNPAttestation::get_report(att_req.nonce, server_public_key)
     .whatever_context("failed to request attestation report from secure processor")?;
+    let att_report = AttestationReport::from_bytes(raw_report.as_slice())
+    .whatever_context("failed to build attestation report object from bytes")?;
 
     println!("Got attestation report. Sending it to client");
 
