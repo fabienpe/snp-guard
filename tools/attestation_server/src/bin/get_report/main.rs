@@ -34,28 +34,24 @@ fn main() -> Result<(), Whatever> {
     
     let mut fw = Firmware::open().whatever_context("failed to open sev firmware device. Is this a SEV-SNP guest?")?;
     let report = fw.get_report(None, Some(report_data), None).whatever_context("error getting report from firmware device")?;
+    let attestation = AttestationReport::from_bytes(report.as_slice())
+    .whatever_context("failed to build attestation report object from bytes")?;
     
+    // Save attestation as JSON
     let f = File::create(&args.out).whatever_context(format!("failed to create output file {}",&args.out))?;
     println!("Your result is at {}.\nCopy it to the host system and the \"verify_report\" binary to verify it, as described in the README", &args.out);
-
+    serde_json::to_writer(f, &attestation).whatever_context("failed to serialize report as json")?;
+    
     // Also save the report as binary
     // See https://github.com/virtee/snpguest/blob/main/src/report.rs
     let bin_filename = &args.out.replace(".json", ".bin");
-    let attestation = AttestationReport::from_bytes(report.as_slice());
-    match attestation {
-        Ok(value) => {
-            let mut file = OpenOptions::new()
-                .create(true)
-                .truncate(true)
-                .write(true)
-                .open(bin_filename).whatever_context("Cannot create fie")?;
-            value.write_bytes(&mut file).whatever_context("Error writing to bytes")?;
-            serde_json::to_writer(f, &value).whatever_context("failed to serialize report as json")?;
-        }
-        Err(error) => {
-            eprintln!("Error while saving binary attestation report {:?}.", error)
-        }
-    }
+    let mut file = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(bin_filename).whatever_context("failed to create file for binary report")?;
+    attestation.write_bytes(&mut file)
+    .whatever_context("failed to write binary attestation report")?;
     
     Ok(())
 }
