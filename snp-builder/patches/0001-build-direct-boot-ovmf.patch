@@ -1,29 +1,18 @@
 Subject: [PATCH] - Applies to e8b814d629a0c2073239828e63d50b125c013570of AMDSEV
-
 diff --git a/common.sh b/common.sh
-index 5f9da16..b51dee4 100755
+index 5f9da16..a95a73f 100755
 --- a/common.sh
 +++ b/common.sh
-@@ -88,8 +88,8 @@ build_kernel()
- 			run_cmd ./scripts/config --set-str LOCALVERSION "$VER-$COMMIT"
- 			run_cmd ./scripts/config --disable LOCALVERSION_AUTO
- 			run_cmd ./scripts/config --enable  EXPERT
--			run_cmd ./scripts/config --enable  DEBUG_INFO
--			run_cmd ./scripts/config --enable  DEBUG_INFO_REDUCED
-+			run_cmd ./scripts/config --enqble  DEBUG_INFO
-+			run_cmd ./scripts/config --enqble  DEBUG_INFO_REDUCED
- 			run_cmd ./scripts/config --enable  AMD_MEM_ENCRYPT
- 			run_cmd ./scripts/config --disable AMD_MEM_ENCRYPT_ACTIVE_BY_DEFAULT
- 			run_cmd ./scripts/config --enable  KVM_AMD_SEV
-@@ -136,6 +136,7 @@ build_kernel()
+@@ -136,6 +136,8 @@ build_kernel()
  			run_cmd ./scripts/config --enable MLXSW_SPECTRUM_DCB
  			run_cmd ./scripts/config --module MLXSW_MINIMAL
  			run_cmd ./scripts/config --module MLXFW
 +			run_cmd ./scripts/config --module SCSI_VIRTIO
++			run_cmd ./scripts/config --module VIRTIO_NET
  
  			run_cmd echo $COMMIT >../../source-commit.kernel.$V
  		popd >/dev/null
-@@ -169,7 +170,12 @@ build_install_ovmf()
+@@ -169,7 +171,12 @@ build_install_ovmf()
  		GCCVERS="GCC5"
  	fi
  
@@ -32,12 +21,12 @@ index 5f9da16..b51dee4 100755
 +	# If you get the following error when the above command is executed:
 +	# grub-mkimage: error: cannot open `/usr/lib/grub/x86_64-efi/linuxefi.mod': No such file or directory.
 +	# You many need to run:
-+	touch OvmfPkg/AmdSev/Grub/grub.efi
++	# touch OvmfPkg/AmdSev/Grub/grub.efi
 +	# See: https://github.com/AMDESE/ovmf/issues/6
  
  	# initialize git repo, or update existing remote to currently configured one
  	if [ -d ovmf ]; then
-@@ -197,9 +203,7 @@ build_install_ovmf()
+@@ -197,9 +204,7 @@ build_install_ovmf()
  		run_cmd $BUILD_CMD
  
  		mkdir -p $DEST
