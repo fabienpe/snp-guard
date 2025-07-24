@@ -1,6 +1,6 @@
 Subject: [PATCH] - Applies to e8b814d629a0c2073239828e63d50b125c013570of AMDSEV
 diff --git a/common.sh b/common.sh
-index 5f9da16..a95a73f 100755
+index 5f9da16..cb23a57 100755
 --- a/common.sh
 +++ b/common.sh
 @@ -136,6 +136,8 @@ build_kernel()
@@ -12,22 +12,30 @@ index 5f9da16..a95a73f 100755
  
  			run_cmd echo $COMMIT >../../source-commit.kernel.$V
  		popd >/dev/null
-@@ -169,7 +171,12 @@ build_install_ovmf()
+@@ -169,7 +171,7 @@ build_install_ovmf()
  		GCCVERS="GCC5"
  	fi
  
 -	BUILD_CMD="nice build -q --cmd-len=64436 -DDEBUG_ON_SERIAL_PORT=TRUE -n $(getconf _NPROCESSORS_ONLN) ${GCCVERS:+-t $GCCVERS} -a X64 -p OvmfPkg/OvmfPkgX64.dsc"
 +	BUILD_CMD="nice build -q --cmd-len=64436 -DDEBUG_ON_SERIAL_PORT=TRUE -n $(getconf _NPROCESSORS_ONLN) ${GCCVERS:+-t $GCCVERS} -a X64 -p OvmfPkg/AmdSev/AmdSevX64.dsc"
-+	# If you get the following error when the above command is executed:
-+	# grub-mkimage: error: cannot open `/usr/lib/grub/x86_64-efi/linuxefi.mod': No such file or directory.
-+	# You many need to run:
-+	# touch OvmfPkg/AmdSev/Grub/grub.efi
-+	# See: https://github.com/AMDESE/ovmf/issues/6
  
  	# initialize git repo, or update existing remote to currently configured one
  	if [ -d ovmf ]; then
-@@ -197,9 +204,7 @@ build_install_ovmf()
- 		run_cmd $BUILD_CMD
+@@ -194,12 +196,19 @@ build_install_ovmf()
+ 		run_cmd make -C BaseTools clean
+ 		run_cmd make -C BaseTools -j $(getconf _NPROCESSORS_ONLN)
+ 		. ./edksetup.sh --reconfig
+-		run_cmd $BUILD_CMD
++		echo $BUILD_CMD
++		eval "$BUILD_CMD" || {
++			echo "ERROR: $BUILD_CMD"
++			echo "Attempting a second run" 
++			# If the $BUILD_CMD gives an error this might be fixed with:
++			touch OvmfPkg/AmdSev/Grub/grub.efi
++			# See: https://github.com/AMDESE/ovmf/issues/6 regarding:
++			# grub-mkimage: error: cannot open `/usr/lib/grub/x86_64-efi/linuxefi.mod': No such file or directory.
++			run_cmd $BUILD_CMD
++		}
  
  		mkdir -p $DEST
 -		run_cmd cp -f Build/OvmfX64/DEBUG_$GCCVERS/FV/OVMF_CODE.fd $DEST
