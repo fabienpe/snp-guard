@@ -28,3 +28,9 @@ debhelper
 rsync
 wget
 mtools
+python3-tomli
+grub-common
+dosfstools
+grub-efi
+grub-efi-amd64-bin
+grub-efi-amd64-signed
