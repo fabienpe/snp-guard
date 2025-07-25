@@ -38,3 +38,7 @@ toml = "0.8.12"
 hex-buffer-serde = "0.4.0"
 indicatif = "0.17.8"
 anyhow = "1.0.69"
+
+# For interacting with KVM to get guest policy (if checking a running VM)
+kvm-ioctls = "0.16"
+bitflags = "2.5"
