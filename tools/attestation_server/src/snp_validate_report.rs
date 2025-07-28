@@ -312,11 +312,18 @@ where
             expected: p,
             got: report.policy,
         });
+        println!("- Policy match: {:?}", p.0);
     }
 
     if let Some(idblock_data) = idblock_data {
         idblock_data
-            .check(&report).context(InvalidIdBlockSnafu{})?
+            .check(&report).context(InvalidIdBlockSnafu{})?;
+        println!("- Valid ID block data:");
+        println!("  guest_svn:           {:?}", idblock_data.guest_svn);
+        println!("  f_id:                {:?}", idblock_data.f_id);
+        println!("  i_id:                {:?}", idblock_data.i_id);
+        println!("  id_key_digest:       {:?}", idblock_data.id_key_digest);
+        println!("  author_key_diregest: {:?}", idblock_data.author_key_digest);
     }
 
     if let Some(tcb) = tcb {
@@ -327,6 +334,12 @@ where
             || got.microcode < tcb.microcode
         {
             return TcbVersionMismatchSnafu{required_minimum:tcb, got:report.committed_tcb}.fail();
+        } else {
+            println!("- Valid TCB version");
+            println!("  Bootloader: {:?} ≥ {:?}", got.bootloader, tcb.bootloader);
+            println!("  TEE: {:?} ≥ {:?}", got.tee, tcb.tee);
+            println!("  SNP: {:?} ≥ {:?}", got.snp, tcb.snp);
+            println!("  Microcode: {:?} ≥ {:?}", got.microcode, tcb.microcode);
         }
     }
 
@@ -336,11 +349,16 @@ where
                 expected: pinfo,
                 got: report.plat_info,
             }.fail();
+        } else {
+            println!("- Platform info match: {:?}", pinfo.0);
         }
     }
 
     if let Some(report_data_validator) = report_data_validator {
         report_data_validator(*report.report_data)?;
+        println!("- Valid report data:");
+        println!("  Base64: {:?}", general_purpose::STANDARD.encode(*report.report_data));
+        println!("  Hex:    {:?}", hex::encode(*report.report_data));
     }
 
     if let Some(host_data) = host_data {
@@ -349,6 +367,10 @@ where
                 expected: host_data,
                 got: *report.host_data,
             }.fail();
+        } else {
+            println!("- Valid host data:");
+            println!("  Base64: {:?}", general_purpose::STANDARD.encode(*report.host_data));
+            println!("  Hex:    {:?}", hex::encode(*report.host_data));
         }
     }
 
@@ -358,6 +380,11 @@ where
                 expected: ld,
                 got: *report.measurement
             }.fail();
+        } else {
+            println!("- Valid launch digest:");
+            println!("  Base64: {:?}", general_purpose::STANDARD.encode(*report.measurement));
+            println!("  Hex:    {:?}", hex::encode(*report.measurement));
+            println!("  Raw:    {:?}", *report.measurement);
         }
     }
 
