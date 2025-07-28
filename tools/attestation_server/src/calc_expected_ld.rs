@@ -4,7 +4,7 @@ use sev::firmware::host::TcbVersion;
 use sev::measurement::{
     snp::{snp_calc_launch_digest, SnpMeasurementArgs},
     vmsa::{GuestFeatures, VMMType},
-    vcpu_types::CpuType
+    vcpu_types::CpuType,
 };
 use snafu::{whatever, ResultExt, Whatever};
 
@@ -39,6 +39,77 @@ pub struct VMDescription {
     #[serde(with = "HexForm")]
     pub image_id: [u8; IDBLOCK_ID_BYTES],
 }
+pub fn format_guest_features(features: &GuestFeatures) -> String {
+    let mut enabled_features = Vec::new();
+
+    if features.snp_active() {
+        enabled_features.push("SNPActive");
+    }
+    if features.v_tom() {
+        enabled_features.push("vTOM");
+    }
+    if features.reflect_vc() {
+        enabled_features.push("ReflectVC");
+    }
+    if features.restricted_injection() {
+        enabled_features.push("RestrictedInjection");
+    }
+    if features.alternate_injection() {
+        enabled_features.push("AlternateInjection");
+    }
+    if features.debug_swap() {
+        enabled_features.push("DebugSwap");
+    }
+    if features.prevent_host_ibs() {
+        enabled_features.push("PreventHostIBS");
+    }
+    if features.btb_isolation() {
+        enabled_features.push("BTBIsolation");
+    }
+    if features.vmpl_sss() {
+        enabled_features.push("VmplSSS");
+    }
+    if features.secure_tsc() {
+        enabled_features.push("SecureTSC");
+    }
+    if features.vmg_exit_parameter() {
+        enabled_features.push("VmgexitParameter");
+    }
+    if features.ibs_virtualization() {
+        enabled_features.push("IbsVirtualization");
+    }
+    if features.vmsa_reg_prot() {
+        enabled_features.push("VmsaRegProt");
+    }
+    if features.smt_protection() {
+        enabled_features.push("SmtProtection");
+    }
+
+    // Format the output string
+    if enabled_features.is_empty() {
+        "None".to_string()
+    } else {
+        enabled_features.join(", ")
+    }
+}
+
+fn display_snp_measurement_args(snp_measure_args: &SnpMeasurementArgs<'_>) {
+    println!("Computing expected launch digest based on:");
+    println!("  vcpus:          {:?}", snp_measure_args.vcpus);
+    println!("  vcpu_type:      {:?}", snp_measure_args.vcpu_type);
+    println!("  ovmf_file:      {:?}", snp_measure_args.ovmf_file);
+    println!("  guest_features: {}", format!("{:064b}", snp_measure_args.guest_features.0));
+    println!("                  {:?}", format_guest_features(&snp_measure_args.guest_features));
+    println!("  kernel_file:    {:?}", snp_measure_args.kernel_file.as_deref().and_then(|p| p.to_str()).unwrap_or(""));
+    println!("  initrd_file:    {:?}", snp_measure_args.initrd_file.as_deref().and_then(|p| p.to_str()).unwrap_or(""));
+    println!("  append:         {:?}", snp_measure_args.append.unwrap_or(""));
+    println!("  ovmf_hash_str:  {:?}", snp_measure_args.ovmf_hash_str);
+    println!("  vmm_type:       {:?}", snp_measure_args.vmm_type.map(|vmm| match vmm {
+        VMMType::QEMU => "QEMU",
+        VMMType::EC2 => "EC2",
+        VMMType::KRUN => "KRUN",
+    }).unwrap_or(""));
+}
 
 impl VMDescription {
     pub fn compute_expected_hash(&self) -> Result<[u8; 384 / 8], Whatever> {
@@ -58,6 +129,7 @@ impl VMDescription {
             ovmf_hash_str: None,
             vmm_type: Some(VMMType::QEMU),
         };
+        display_snp_measurement_args(&snp_measure_args);
 
         let ld = snp_calc_launch_digest(snp_measure_args)
             .whatever_context("failed to compute launch digest")?;
