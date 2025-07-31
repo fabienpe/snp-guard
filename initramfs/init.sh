@@ -92,6 +92,9 @@ boot_verity() {
     # used for getting the attestation report
     modprobe sev-guest
 
+    # enable msr kernel for accessing MSR_AMD64_SEV and derigin SEV_FEATURE
+    modprobe msr
+
     # unlock verity device
     veritysetup open $ROOT root $VERITY_DISK $VERITY_ROOT_HASH
 
@@ -114,7 +117,10 @@ boot_verity() {
 
     # generate attestation report with SSH fingerprint as user data
     FINGERPRINT=`ssh-keygen -lf $MNT_DIR/etc/ssh/ssh_host_ecdsa_key.pub | awk '{ print $2 }' | cut -d ":" -f 2`
-    /bin/get_report --report-data $FINGERPRINT --out $MNT_DIR/etc/report.json
+    /bin/get_report --report-data $FINGERPRINT \
+                    --out $MNT_DIR/etc/report.json \
+                    --out-bin $MNT_DIR/etc/report.bin \
+                    --out-sev $MNT_DIR/etc/report_sev_eature.json
 }
 
 #default launch config for sev uses virto as device driver
