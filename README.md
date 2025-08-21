@@ -1,3 +1,5 @@
+This is a fork of [SNPGuard](https://github.com/SNPGuard/snp-guard) that works with AMD EPYC 9335 and commit [e8b814d](https://github.com/AMDESE/AMDSEV/commit/e8b814d629a0c2073239828e63d50b125c013570) of AMDSEV.
+
 # SNPGuard
 
 This repository demonstrates an end-to-end secured setup for a SEV-SNP VM. To
